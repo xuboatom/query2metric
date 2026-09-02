@@ -6,7 +6,7 @@ import (
 )
 
 type CountQuery interface {
-	Count(metric config.Metric) (int64, error)
+	Query(metric config.Metric) (float64, error)
 }
 
 var ENV_NOT_SET = errors.New("connnectionString is empty")

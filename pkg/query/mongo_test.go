@@ -78,29 +78,29 @@ func TestMongoCount(t *testing.T) {
 		Collection: "test",
 		Query:      `{"is_active":true}`,
 	}
-	out, err := conn.Count(testQuery)
-	require.Equal(t, int64(1), out)
+	out, err := conn.Query(testQuery)
+	require.Equal(t, float64(1), out)
 	require.NoError(t, err)
 
 	testQuery.Query = ""
-	out, err = conn.Count(testQuery)
-	require.Equal(t, int64(2), out)
+	out, err = conn.Query(testQuery)
+	require.Equal(t, float64(2), out)
 	require.NoError(t, err)
 
 	// negative test cases
 	testQuery.Query = "{test:'invalidjson'"
-	out, err = conn.Count(testQuery)
-	require.Equal(t, int64(0), out)
+	out, err = conn.Query(testQuery)
+	require.Equal(t, float64(0), out)
 	require.Error(t, err)
 
 	testQuery.Query = `{"test":{"$count":"{"}}`
-	out, err = conn.Count(testQuery)
-	require.Equal(t, int64(0), out)
+	out, err = conn.Query(testQuery)
+	require.Equal(t, float64(0), out)
 	require.Error(t, err)
 
 	testQuery.Query = `{"test":{"$count":"{"}}`
-	out, err = conn.Count(testQuery)
-	require.Equal(t, int64(0), out)
+	out, err = conn.Query(testQuery)
+	require.Equal(t, float64(0), out)
 	require.Error(t, err)
 
 }

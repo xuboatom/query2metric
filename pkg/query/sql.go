@@ -30,7 +30,7 @@ func NewSQLQuery(connnectionURL string) (CountQuery, error) {
 	return &sqlQuery{connnectionURL, db}, nil
 }
 
-func (s *sqlQuery) Count(metric config.Metric) (int64, error) {
+func (s *sqlQuery) Query(metric config.Metric) (float64, error) {
 	if metric.Query == "" {
 		return 0, errors.New("Query is empty")
 	}
@@ -48,5 +48,5 @@ func (s *sqlQuery) Count(metric config.Metric) (int64, error) {
 			return 0, errors.Wrap(err, "Error running query")
 		}
 	}
-	return out, nil
+	return float64(out), nil
 }

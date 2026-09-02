@@ -71,25 +71,25 @@ func TestSQLCount(t *testing.T) {
 	testQuery := config.Metric{
 		Query: `select * from test where is_active = true`,
 	}
-	out, err := conn.Count(testQuery)
-	require.Equal(t, int64(1), out)
+	out, err := conn.Query(testQuery)
+	require.Equal(t, float64(1), out)
 	require.NoError(t, err)
 
 	testQuery.Query = `select * from test`
-	out, err = conn.Count(testQuery)
-	require.Equal(t, int64(2), out)
+	out, err = conn.Query(testQuery)
+	require.Equal(t, float64(2), out)
 	require.NoError(t, err)
 
 	testQuery.Query = ""
-	out, err = conn.Count(testQuery)
+	out, err = conn.Query(testQuery)
 	require.Error(t, err)
-	require.Equal(t, int64(0), out)
+	require.Equal(t, float64(0), out)
 
 	// Negative test cases
 	testQuery.Query = `test`
-	out, err = conn.Count(testQuery)
+	out, err = conn.Query(testQuery)
 	require.Error(t, err)
-	require.Equal(t, int64(0), out)
+	require.Equal(t, float64(0), out)
 
 }
 

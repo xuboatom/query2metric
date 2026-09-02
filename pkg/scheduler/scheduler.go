@@ -66,16 +66,16 @@ func (s Scheduler) Start() error {
 
 func run(tick *time.Ticker, gauge prometheus.Gauge, quer query.CountQuery, metric config.Metric, successChan, errorChan chan bool) {
 
-	go func() {
+		go func() {
 		for {
 			select {
 			case <-tick.C:
-				out, err := quer.Count(metric)
+				out, err := quer.Query(metric)
 				if err != nil {
 					errorChan <- true
 					log.WithFields(log.Fields{"db": metric.Database, "metric": metric.Name, "query": metric.Query}).Error(err)
 				} else {
-					gauge.Set(float64(out))
+					gauge.Set(out)
 					successChan <- true
 					log.WithFields(log.Fields{"db": metric.Database, "metric": metric.Name, "query": metric.Query}).Debug("success")
 				}

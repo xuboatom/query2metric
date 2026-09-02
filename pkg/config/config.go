@@ -17,6 +17,10 @@ type Metric struct {
 	Collection string `yaml:"collection"`
 	Query      string `yaml:"query"`
 	Time       int64  `yaml:"time"`
+	// Mode controls query type: "count" (default) or "value"
+	Mode string `yaml:"mode"`
+	// Field is the document field path to extract when mode is "value" (e.g. "balance" or "stats.cpu_usage")
+	Field string `yaml:"field"`
 }
 
 type Connection struct {
