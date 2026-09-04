@@ -16,13 +16,25 @@ connections:
         query: ""
         time: 120
       - name: user_balance
-        helpString: alice balance value
+        helpString: user balance values
         database: test
         collection: test
         query: '{"name":"alice"}'
         field: "balance"
         mode: "value"
         time: 30
+        labels:
+          role: "alice"
+      - name: user_balance
+        helpString: user balance values
+        database: test
+        collection: test
+        query: '{"name":"bob"}'
+        field: "balance"
+        mode: "value"
+        time: 30
+        labels:
+          role: "bob"
   - name: postgres1
     type: SQL
     connectionStringFromEnv: POSTGRES_CONN

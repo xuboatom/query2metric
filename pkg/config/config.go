@@ -11,16 +11,15 @@ const MONGO = "MONGO"
 const SQL = "SQL"
 
 type Metric struct {
-	Name       string `yaml:"name"`
-	HelpString string `yaml:"helpString"`
-	Database   string `yaml:"database"`
-	Collection string `yaml:"collection"`
-	Query      string `yaml:"query"`
-	Time       int64  `yaml:"time"`
-	// Mode controls query type: "count" (default) or "value"
-	Mode string `yaml:"mode"`
-	// Field is the document field path to extract when mode is "value" (e.g. "balance" or "stats.cpu_usage")
-	Field string `yaml:"field"`
+	Name       string            `yaml:"name"`
+	HelpString string            `yaml:"helpString"`
+	Database   string            `yaml:"database"`
+	Collection string            `yaml:"collection"`
+	Query      string            `yaml:"query"`
+	Time       int64             `yaml:"time"`
+	Mode       string            `yaml:"mode"`
+	Field      string            `yaml:"field"`
+	Labels     map[string]string `yaml:"labels"`
 }
 
 type Connection struct {

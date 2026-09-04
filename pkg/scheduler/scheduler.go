@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"sort"
 	"time"
 
 	"github.com/pkg/errors"
@@ -9,6 +10,69 @@ import (
 	"github.com/yolossn/query2metric/pkg/config"
 	"github.com/yolossn/query2metric/pkg/query"
 )
+
+// 全局缓存：已注册的 metric 名 → GaugeVec
+var registeredVecs = make(map[string]*prometheus.GaugeVec)
+
+// metricSetter 统一 Gauge 和 GaugeVec 的 Set 行为
+type metricSetter interface {
+	Set(float64)
+}
+
+type labeledSetter struct {
+	gaugeVec  *prometheus.GaugeVec
+	labelVals []string
+}
+
+func (s *labeledSetter) Set(v float64) {
+	s.gaugeVec.WithLabelValues(s.labelVals...).Set(v)
+}
+
+// sortedKeys 返回 map 的 key 按字母排序，保证 GaugeVec label 顺序一致
+func sortedKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+// valuesForKeys 按给定 key 顺序提取 map 的值
+func valuesForKeys(m map[string]string, keys []string) []string {
+	vals := make([]string, len(keys))
+	for i, k := range keys {
+		vals[i] = m[k]
+	}
+	return vals
+}
+
+func makeSetter(metric config.Metric, namespace string) (metricSetter, error) {
+	fullName := namespace + "_" + metric.Name
+
+	labelNames := sortedKeys(metric.Labels)
+	labelVals := valuesForKeys(metric.Labels, labelNames)
+
+	if gv, ok := registeredVecs[fullName]; ok {
+		// 同名 metric 已注册，复用 GaugeVec
+		return &labeledSetter{gaugeVec: gv, labelVals: labelVals}, nil
+	}
+
+	// 第一次注册，创建 GaugeVec
+	gv := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      metric.Name,
+			Help:      metric.HelpString,
+		},
+		labelNames,
+	)
+	if err := prometheus.Register(gv); err != nil {
+		return nil, errors.Wrap(err, "Error registering metric")
+	}
+	registeredVecs[fullName] = gv
+	return &labeledSetter{gaugeVec: gv, labelVals: labelVals}, nil
+}
 
 func init() {
 	log.SetFormatter(&log.JSONFormatter{})
@@ -42,19 +106,12 @@ func (s Scheduler) Start() error {
 
 		for _, metric := range conn.Metrics {
 
-			gaugeMetric := prometheus.NewGauge(
-				prometheus.GaugeOpts{
-					Namespace: conn.Name,
-					Name:      metric.Name,
-					Help:      metric.HelpString,
-				},
-			)
-			err = prometheus.Register(gaugeMetric)
+			setter, err := makeSetter(metric, conn.Name)
 			if err != nil {
-				return errors.Wrap(err, "Error registering metric")
+				return errors.Wrap(err, "Error creating metric setter")
 			}
 			ticker := time.NewTicker(time.Duration(metric.Time) * time.Second)
-			run(ticker, gaugeMetric, dbConnection, metric, successChan, errorChan)
+			run(ticker, setter, dbConnection, metric, successChan, errorChan)
 		}
 	}
 
@@ -64,7 +121,7 @@ func (s Scheduler) Start() error {
 	return nil
 }
 
-func run(tick *time.Ticker, gauge prometheus.Gauge, quer query.CountQuery, metric config.Metric, successChan, errorChan chan bool) {
+func run(tick *time.Ticker, setter metricSetter, quer query.CountQuery, metric config.Metric, successChan, errorChan chan bool) {
 
 		go func() {
 		for {
@@ -75,7 +132,7 @@ func run(tick *time.Ticker, gauge prometheus.Gauge, quer query.CountQuery, metri
 					errorChan <- true
 					log.WithFields(log.Fields{"db": metric.Database, "metric": metric.Name, "query": metric.Query}).Error(err)
 				} else {
-					gauge.Set(out)
+					setter.Set(out)
 					successChan <- true
 					log.WithFields(log.Fields{"db": metric.Database, "metric": metric.Name, "query": metric.Query}).Debug("success")
 				}
